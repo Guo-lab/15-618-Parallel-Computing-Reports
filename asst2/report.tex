@@ -414,11 +414,11 @@ Score table:
               \begin{itemize}
                   \item First, the render does not meet the atomicity and ordering requirements as it assign the work of rendering each circle to a single thread.
                         The threads are not synchronized, and the result is not deterministic.
-                        For each pixel, the thread working on it might not be in the same order as it should be (the circle order provided by the circleIndex).
+                        For each pixel, the thread working on it might not be in the same order as it should be (the circle order provided by the circleIndex). \\
 
                         Then, it came to my mind that I should deal with each pixel independently with its required order.
-                        Distribute the work of rendering each circle to the threads, then maintain an array to store the order of circles on each pixel.
-                        The second step is to distribute the work of each pixel to the threads with the order I have saved.
+                        Distribute the work of rendering each circle to the threads, then maintain a global device array to store the order of circles on each pixel.
+                        The second step is to distribute the work of each pixel to the threads with the order I have saved. \\
 
                         This method works but is not efficient as in the first step we cannot fully utilize the GPU parallelism and the order storage will cause out of memory if the image is too large. Result is as follows.
 
