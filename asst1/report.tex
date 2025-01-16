@@ -1,0 +1,292 @@
+\documentclass[letterpaper,11pt]{exam}
+\usepackage{amssymb,amsmath,amsthm,mathtools}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{pdfpages}
+\usepackage{amsmath}
+
+\usepackage{booktabs}
+\usepackage{caption}
+
+\usepackage{pythontex}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{floatflt}
+
+\setlength{\parskip}{1em}  % Space between paragraphs
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\footnotesize\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=4,
+  frame=none
+}
+
+\newcommand{\num}{1}
+\newcommand{\topic}{Homework \num}
+\newcommand{\coursenum}{15-418/15-618}
+\newcommand{\coursename}{\coursenum\ Parallel Computer Architecture and Programming}
+\newcommand{\fullname}{Siqi Guo}
+\newcommand{\andrew}{AndrewID: siqiguo}
+\setlength{\parindent}{0pt} %don't indent first line of paragraph
+
+\definecolor{lightblue}{rgb}{0.2, 0.7, 1} % Light blue in RGB
+\hypersetup{
+    colorlinks=true,        % Enable colored links (no boxes)
+    linkcolor=lightblue,    % Color of internal links
+    citecolor=lightblue,    % Color of citation links
+    urlcolor=lightblue      % Color of external hyperlinks
+}
+
+\pagestyle{headandfoot}
+\runningheader{\fullname}{\coursenum\ \textbf{\topic}}{\andrew}
+\firstpagefooter{}{\thepage}{}
+\runningfooter{}{\thepage}{}
+\extrawidth{.5in}\extraheadheight{-.25in}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE\coursename\par}
+    {\Large\topic\par}
+    \fullname (\andrew) \hfill \today
+\end{center}
+\printanswers
+
+
+\begin{questions}
+    \question
+    \subsection*{Problem 1: Parallel Fractal Generation Using Pthreads (15 points)}
+
+    \begin{enumerate}[label=\roman*.]
+        \item This type of problem decomposition is referred as Spatial Decomposition since different spatial regions of the image are computed by different processors.
+
+              Note that the processor (eight 3.2 GHz Intel Core i7 processors) only has 8 cores, but each core supports two hyper-threads.
+        \item We partition the image generation work into the appropriate number of horizontal blocks.
+
+              \includegraphics*[width=0.7\textwidth]{./prog1\_mandelbrot\_threads/output\_log/speedup\_performance.png}
+              \begin{itemize}[label=$\circ$]
+                  \item Speedup is not linear in the number of cores used.
+                  \item The workload is not necessarily evenly distributed among the threads.
+                  \item My measurements show that the elapsed time is not same for each thread, which explains the non-linear speedup due to non-evenly workload.
+              \end{itemize}
+
+              \vspace{0.3cm}
+
+        \item Modify the mapping of work to threads to improve speedup to almost 8x on the first two
+              views of the Mandelbrot set.
+
+              To decompose the work into row-wise blocks, we can assign each thread to compute a row of the image.
+              This way, the workload is more evenly distributed among the threads, we could reach speedup around 7.40x \textasciitilde 7.53x.
+              For view 1, the speedup from 4 to 8 threads is from 3.81x to 7.47x, but from 8 to 16 threads, the speedup is from 7.47x to 7.40x.
+              For view 2, the speedup from 4 to 8 threads is from 3.72x to 7.29x, but from 8 to 16 threads, the speedup is from 7.29x to 7.28x.
+
+              In my decomposition policy, the scaling behavior are different from 4 to 8 threads and 8 to 16 threads, which indicates 4 to 8 threads speedup is almost linear because all threads have access to independent physical cores. However, 8 to 16 threads speedup is not linear because the threads are sharing the same physical core due to hyper-threading.
+    \end{enumerate}
+
+    \newpage
+
+    \question
+    \subsection*{Problem 2: Vectorizing Code Using SIMD Intrinsics (20 points)}
+
+    \begin{enumerate}[label=\roman*.]
+        \item The implementation of \texttt{clampedExpVector()} should work with any combination of input
+              array size N and vector width W.
+        \item Run \texttt{./vrun -s 10000} and sweep the vector width over the values {2, 4, 8, 16, 32}.
+              Record the resulting vector utilization.
+
+              \begin{table}[ht]
+                  \centering
+                  \scriptsize
+                  \begin{tabular}{|c|c|c|c|c|c|}
+                      \hline
+                      VECTOR\_WIDTH W           & 2            & 4            & 8            & 16           & 32           \\ \hline
+                      Total Vector Instructions & 276613       & 141698       & 71238        & 35628        & 17787        \\ \hline
+                      Vector Utilization        & 89.066132 \% & 88.370866 \% & 88.216787 \% & 88.211344 \% & 88.212072 \% \\ \hline
+                  \end{tabular}
+                  \caption{Vector Utilization for Different Vector Widths}
+              \end{table}
+
+              The vector utilization decreases as W increases a bit, but the difference is not significant. The degree of sensitivity the utilization has on the vector width is not very high. \\
+              The higher W is, the more vector instructions are executed.
+
+        \item \texttt{arraySumVector()} has been implemented, and the results passed the correctness test as follows.
+
+              \includegraphics*[width=0.65\textwidth]{./prog2\_vecintrin/arraySumVector.jpg}
+    \end{enumerate}
+
+
+
+    \newpage
+
+    \question
+    \subsection*{Problem 3: Parallel Fractal Generation Using ISPC (15 points)}
+
+    \begin{enumerate}[label=\roman*.]
+        \item A Few ISPC Basics (7 of 15 points)
+
+              \begin{itemize}
+                  \item maximum speedup: 8x, as 8-wide AVX2 instruction operates on 8 data elements simultaneously. SIMD parallelism.
+                  \item The reason why the number I observe be less than this ideal: workload imbalance across lanes, branch divergence.
+              \end{itemize}
+
+        \item ISPC Tasks (8 of 15 points)
+
+              \begin{itemize}
+                  \item The speedup from task ISPC (the mandelbrot multicore ispc) is 9.54x, compared to from ISPC (the mandelbrot ispc) 4.83x.
+                        The speedup over the version that does not partition that computation into tasks is 9.54/4.83 = 1.975x.
+                  \item The speedup could reach 34.81x when we set the number of tasks to 125.
+
+                        \includegraphics*[width=0.65\textwidth]{./prog3\_mandelbrot\_ispc/output\_log/speedup_vs_thread_count.png}
+                  \item ISPC's task abstraction efficiently utilizes SIMD hardware to process data in parallel by mapping program instances to SIMD lanes, minimizing overhead by working directly with vector instructions. This is well-suited for fine-grained, data-parallel tasks where computations align with SIMD capabilities.
+
+                        In contrast, Pthreads provide a general-purpose threading abstraction that relies on the operating system for scheduling and synchronization, which introduces higher overheads due to thread creation, management, and context switching.
+
+                        While ISPC excels in data-level parallelism, Pthreads are more flexible for coarse-grained parallelism across multiple cores.
+              \end{itemize}
+    \end{enumerate}
+
+
+
+    \newpage
+
+    \question
+    \subsection*{Problem 4: Iterative Square Root (10 points)}
+
+    \begin{enumerate}[label=\roman*.]
+        \item The sqrt program has been built and run. The speedup due to SIMD (no
+              tasks) parallelization is 4.77x. The speedup due to multi-core parallelization
+              is 34.69x.
+
+        \item The speedup under different scenarios is as follows.
+
+              \begin{table}[ht]
+                  \centering
+                  \scriptsize
+                  \begin{tabular}{|c|c|c|c|}
+                      \hline
+                      Case               & Random & initGood & initBad \\ \hline
+                      SIMD Speedup       & 4.77x  & 6.88x    & 0.95x   \\ \hline
+                      Multi-Core Speedup & 34.68x & 50.16x   & 6.89x   \\ \hline
+                  \end{tabular}
+                  \caption{Speedup under Different Scenarios}
+              \end{table}
+
+              The \texttt{initGood()} change the value to 2.999. The initialized value of 2.999 could result in the maximum
+              iteration, and accelerate the paralleled computation to the largest extent. This
+              modification improves both SIMD and multi-core speedup.
+
+              The \texttt{initBad()} change the value to 1.0. The value around 1.0 results in the minimum iteration and the
+              least absolute computation time. There is not much time to decrease with
+              parallelism. This modification decreases SIMD and multi-core speedup.
+
+              %   \includegraphics*[width=0.65\textwidth]{./prog4\_isqrt/output\_log/speedup_vs_thread_count.png}
+    \end{enumerate}
+
+    \newpage
+
+    \question
+
+    \subsection*{Problem 5: BLAS saxpy (10 points)}
+
+    The saxpy routine in the BLAS (Basic Linear Algebra Subproblems) library that is
+    widely used (and heavily optimized) on many systems.
+
+    The \textbf{saxpy} function computes the operation:
+    $\mathbf{r} = a \mathbf{x} + \mathbf{y}$
+    where $a$ is a scalar, and $\mathbf{r}, \mathbf{x}, \mathbf{y}$ are vectors of size $N$ containing single-precision floating-point values.
+    The term \textbf{saxpy} is an acronym for \textbf{"single-precision a x plus y"}.
+
+    \begin{enumerate}[label=\roman*.]
+        \item The speedup due to SIMD parallelization is 1x. The speedup from ISPC with tasks is 1.03x.
+
+              \captionsetup{font=small, labelfont=bf}
+              \begin{table}[h!]
+                  \centering
+                  \caption{SAXPY Performance Comparison}
+                  \begin{tabular}{@{}lccc@{}}
+                      \toprule
+                      \textbf{Method} & \textbf{Time (ms)} & \textbf{Bandwidth (GB/s)} & \textbf{GFLOPS} \\
+                      \midrule
+                      SAXPY Serial    & 11.238             & 26.520                    & 1.780           \\
+                      SAXPY Streaming & 11.238             & 26.520                    & 1.780           \\
+                      SAXPY ISPC      & 11.246             & 26.500                    & 1.778           \\
+                      SAXPY Task ISPC & 10.920             & 27.291                    & 1.831           \\
+                      \midrule
+                      \multicolumn{4}{l}{(1.00x speedup from streaming)}                                 \\
+                      \multicolumn{4}{l}{(1.00x speedup from ISPC)}                                      \\
+                      \multicolumn{4}{l}{(1.03x speedup from task ISPC)}                                 \\
+                      \bottomrule
+                  \end{tabular}
+                  \label{tab:saxpy-performance}
+              \end{table}
+
+
+              I do not think we could achieve linear speedup as the memory bandwidth could be the bottleneck.
+
+        \item One value is loaded from vector x \texttt{(N x sizeof(float))}. One value is loaded from vector y \texttt{(N x sizeof(float))}.
+              One value is written to the result vector  r \texttt{(N x sizeof(float))}.
+              However, result should be stored in the cache, thus a cache miss will lead to 2 N (read from memory to cache, then back to memory).
+
+        \item In addition to the memory bandwidth, the performance of SAXPY might be also limited by poor cache utilization, high cache misses, low pre-fetching efficiency, and the latency of FP operations or DRAM.
+        \item Improve the performance of saxpy by reducing the memory requirement (modify \texttt{saxpyStreaming()}).
+              \captionsetup{font=small, labelfont=bf}
+              \begin{table}[h!]
+                  \centering
+                  \caption{SAXPY Performance Comparison After Streaming}
+                  \begin{tabular}{@{}lccc@{}}
+                      \toprule
+                      \textbf{Method} & \textbf{Time (ms)} & \textbf{Bandwidth (GB/s)} & \textbf{GFLOPS} \\
+                      \midrule
+                      SAXPY Serial    & 11.280             & 26.421                    & 1.773           \\
+                      SAXPY Streaming & 8.209              & 36.302                    & 2.436           \\
+                      SAXPY ISPC      & 11.122             & 26.797                    & 1.798           \\
+                      SAXPY Task ISPC & 10.900             & 27.342                    & 1.835           \\
+                      \midrule
+                      \multicolumn{4}{l}{(1.37x speedup from streaming)}                                 \\
+                      \multicolumn{4}{l}{(1.01x speedup from ISPC)}                                      \\
+                      \multicolumn{4}{l}{(1.03x speedup from task ISPC)}                                 \\
+                      \bottomrule
+                  \end{tabular}
+                  \label{tab:saxpy_comparison}
+              \end{table}
+
+
+
+    \end{enumerate}
+
+    Overall, the cache does matter in this problem.
+
+    % \begin{figure}[h]
+    %     \begin{minipage}{0.5\textwidth}
+    %         \centering
+    %         \includegraphics[width=\textwidth]{./hw3_code/plots/question_3a.png}
+    %         \label{fig:question3b}
+    %     \end{minipage}
+    %     \hspace{-0.5cm}
+    %     \begin{minipage}{0.5\textwidth}
+    %         From the plot, increasing the fraction of clients sampled per round increases the global model's convergence speed and enhances the accuracy with more representative local updates.
+
+    %         However, given the IID data distribution, the performance of the model will not be significantly affected by increasing the fraction of clients sampled per round, compared to the non-IID case.
+    %     \end{minipage}
+    % \end{figure}
+
+\end{questions}
+
+\end{document}
