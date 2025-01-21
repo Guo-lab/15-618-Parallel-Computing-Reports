@@ -1,0 +1,77 @@
+@startuml
+' Define classes and relationships
+
+class Wire {
+    - int start_x
+    - int start_y
+    - int end_x
+    - int end_y
+    - int bend1_x
+    - int bend1_y
+    + validate_wire_t to_validate_format() const
+}
+
+class validate_wire_t {
+    - uint8_t num_pts
+    - struct { uint16_t x, uint16_t y } p[MAX_PTS_PER_WIRE]
+    + validate_wire_t &cleanup()
+    + void print_wire() const
+}
+
+enum Mode {
+    SERIAL
+    ACROSS_WIRE
+    WITHIN_WIRE
+    INVALID
+}
+
+class WireRouter {
+    - Mode parallel_mode_
+    - const bool debug_flag
+    - const bool further_debug_flag
+    + WireRouter(char parallel_mode)
+    + void run(std::vector<Wire>&, std::vector<std::vector<int>>&, int, double, int)
+    - void routeSerial(std::vector<Wire>&, std::vector<std::vector<int>>&, int, double)
+    - void routeParallelAcrossWire(std::vector<Wire>&, std::vector<std::vector<int>>&, int, double, int)
+    - void routeParallelWithinWire(std::vector<Wire>&, std::vector<std::vector<int>>&, int, double, int)
+    - void print_occupancy(const std::vector<std::vector<int>>&)
+    - long long calculate_cost(const std::vector<std::vector<int>>&)
+    - long long update_cost(Wire&, std::vector<std::vector<int>>&, long long)
+    - void rollback_wire(const Wire&, std::vector<std::vector<int>>&)
+    - void route_wire(Wire&, std::vector<std::vector<int>>&)
+    - long long greedy_search_best_route(Wire&, std::vector<std::vector<int>>&, long long)
+    - long long optimized_greedy_search_best_route(Wire&, std::vector<std::vector<int>>&, long long, long long)
+    - void within_wire_search_best_route(Wire&, std::vector<std::vector<int>>&, long long, long long, int)
+    - void within_wire_search_best_route_single_loop(Wire&, std::vector<std::vector<int>>&, long long, long long, int)
+    - void across_wire_search_best_route(Wire&, std::vector<std::vector<int>>&, long long, long long)
+}
+
+class wr_checker {
+    - std::vector<Wire> wires
+    - std::vector<std::vector<int>> occupancies
+    - const int nwires
+    - const int dim_x
+    - const int dim_y
+    + wr_checker(std::vector<Wire>&, std::vector<std::vector<int>>&)
+    + void validate() const
+}
+
+class Logger {
+    - std::chrono::steady_clock::time_point start_time
+    + Logger()
+    + void start_timer()
+    + void log_time_message(const std::string&)
+    + void print_occupancy_stats(const std::vector<std::vector<int>>&)
+    + void persist_wires_occupancy(wires, num_wires, occupancy, dim_x, dim_y, num_threads, filename)
+    - double stop_timer()
+}
+
+' Relationships
+WireRouter --> Wire
+' WireRouter --> wr_checker
+WireRouter --> Logger
+WireRouter --> Mode
+wr_checker --> Wire
+Wire --> validate_wire_t
+
+@enduml
