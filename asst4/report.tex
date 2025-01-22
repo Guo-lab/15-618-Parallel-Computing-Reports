@@ -171,8 +171,65 @@ At the very end, it turns out that machine 28 is a problem where \texttt{perf} i
     % \end{enumerate}
 
     \begin{enumerate}[label=\roman*.]
-        \item Similar to OpenMP implementation. After implementing the MPI paralleled program, we have correctness results attached at the end of the report.
+        \item Similar to the OpenMP implementation. After implementing the Across-Wire MPI paralleled program, we have correctness test results attached at the end of the report.
+        \item The pseudocode provided.
 
+              \begin{lstlisting}
+// Variable Declaration ...
+MPI_Init(&argc, &argv);                 // Initialize MPI
+MPI_Comm_rank(MPI_COMM_WORLD, &pid);    // Get process rank
+MPI_Comm_size(MPI_COMM_WORLD, &nproc);  // Get total number of processes
+
+parse_arguments(...);
+initialize_routing(...);
+
+MPI_Bcast(&num_wires, 1, MPI_INT, ROOT, MPI_COMM_WORLD);
+MPI_Bcast(&dim_y, 1, MPI_INT, ROOT, MPI_COMM_WORLD);
+MPI_Bcast(&dim_x, 1, MPI_INT, ROOT, MPI_COMM_WORLD);
+initialize_receiver_vector_size(...);
+
+// MPI_Bcast only work on contiguous memory buffers.
+MPI_Bcast(wires.data(), num_wires * sizeof(Wire), MPI_BYTE, ROOT, MPI_COMM_WORLD);
+MPI_Bcast(flat_occupancy.data(), dim_y * dim_x * sizeof(int), MPI_BYTE, ROOT, MPI_COMM_WORLD);
+
+// All processes must wait until the broadcast is complete before proceeding to the next step.
+If pid is not ROOT
+    For each row in occupancy grid
+        Copy data from flat_occupancy to 2D occupancy array
+    End For
+End If
+
+// Calculate work span for each process
+Determine work span based on process rank and total wires
+Adjust work span for edge cases (e.g., remainder wires)
+
+
+For each simulated annealing iteration
+    For wires assigned to this process (from startIndex to endIndex)
+        Perform routing algorithms
+    End For
+End For
+
+// send data to root process
+if (pid != ROOT) {
+    MPI_Send(&wires[startIndex], workSpan * sizeof(Wire), MPI_BYTE, ROOT, TAG, MPI_COMM_WORLD);
+} else {
+    MPI_Status status;
+    for (int source = 1; source < nproc; source++) {
+        MPI_Recv(&wires[source * workSpan], workSpan * sizeof(Wire), MPI_BYTE, source, TAG, MPI_COMM_WORLD,
+                    &status);
+    }
+}
+// This is another synchronization point where the root process must wait for all sends to complete before it can continue.
+
+// Update occupancy grid on ROOT process
+If pid is ROOT
+    Update occupancy grid with received data
+End If
+
+// Cleanup
+MPI_Finalize();
+        \end{lstlisting}
               % \item The implementation of \texttt{clampedExpVector()} should work with any combination of input
               %       array size N and vector width W.
               % \item Run \texttt{./vrun -s 10000} and sweep the vector width over the values {2, 4, 8, 16, 32}.
@@ -200,9 +257,9 @@ At the very end, it turns out that machine 28 is a problem where \texttt{perf} i
 
     \question
     \subsection*{[15 points] Experimental results from the GHC machines}
-    \begin{enumerate}[label=\roman*.]
-        \item First,
-    \end{enumerate}
+    % \begin{enumerate}[label=\roman*.]
+    %     \item First,
+    % \end{enumerate}
 
     \question
     \subsection*{\sout{[20 points] Experimental results from the PSC machines}}
